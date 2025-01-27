@@ -2,12 +2,11 @@
 # pip install pyTelegramBotAPI
 
 
-
 import telebot
 import random
 
 # Токен бота
-TOKEN = '7452447929:AAH3U-8k5WBfoPbuqEW4G7FdMNPsOoBuysE'
+TOKEN = ''
 
 # Создание экземпляра бота
 bot = telebot.TeleBot(TOKEN)
