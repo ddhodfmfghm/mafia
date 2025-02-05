@@ -32,5 +32,5 @@
 
 ## Установка:
 Cочетанием клавиш win + r открыть cmd и ввести команды для установки библиотеки:
-- **cd/d C:\Users\'имя пользователя'\AppData\Local\Programs\Python\'папка с версией питона'\Scripts**
+- **cd/d C:\Users\*имя пользователя*\AppData\Local\Programs\Python\*папка с версией питона*\Scripts**
 - **pip install pyTelegramBotAPI**
