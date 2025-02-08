@@ -7,7 +7,7 @@ import random
 from telebot import types
 
 # Токен бота
-TOKEN = ''
+TOKEN = '7452447929:AAH3U-8k5WBfoPbuqEW4G7FdMNPsOoBuysE'
 
 # Создание экземпляра бота
 bot = telebot.TeleBot(TOKEN)
@@ -52,17 +52,14 @@ def start(message):
 def join(message):
     player_name = message.from_user.username
     player_id = message.from_user.id
+    if player_id == host_id:
+        bot.reply_to(message, 'Ведущий не может быть игроком. Сначала сбросьте роль ведущего.', reply_markup=create_host_keyboard())
+        return
     if player_id not in players:
         players[player_id] = player_name
-        if player_id == host_id:
-            bot.reply_to(message, f'{player_name} присоединился к игре!', reply_markup=create_host_keyboard())
-        else:
-            bot.reply_to(message, f'{player_name} присоединился к игре!', reply_markup=create_player_keyboard(is_host_assigned=host_id is not None, is_player=True))
+        bot.reply_to(message, f'@{player_name} присоединился к игре!', reply_markup=create_player_keyboard(is_host_assigned=host_id is not None, is_player=True))
     else:
-        if player_id == host_id:
-            bot.reply_to(message, f'{player_name}, вы уже в игре!', reply_markup=create_host_keyboard())
-        else:
-            bot.reply_to(message, f'{player_name}, вы уже в игре!', reply_markup=create_player_keyboard(is_host_assigned=host_id is not None, is_player=True))
+        bot.reply_to(message, f'@{player_name}, вы уже в игре!', reply_markup=create_player_keyboard(is_host_assigned=host_id is not None, is_player=True))
 
 # Функция для назначения ведущего
 @bot.message_handler(commands=['host'])
@@ -74,11 +71,11 @@ def set_host(message):
         return
 
     if player_id in players:
-        bot.reply_to(message, 'Вы не можете стать ведущим, так как вы уже игрок.', reply_markup=create_player_keyboard(is_host_assigned=True, is_player=True))
+        bot.reply_to(message, 'Вы не можете стать ведущим, так как вы уже игрок. Сначала сбросьте роль игрока.', reply_markup=create_player_keyboard(is_host_assigned=True, is_player=True))
         return
 
     host_id = player_id
-    bot.reply_to(message, f'{message.from_user.username} назначен ведущим!', reply_markup=create_host_keyboard())
+    bot.reply_to(message, f'@{message.from_user.username} назначен ведущим!', reply_markup=create_host_keyboard())
 
     # Обновляем клавиатуру для всех игроков
     for player_id in players:
@@ -120,7 +117,7 @@ def begin_game(message):
         bot.reply_to(message, 'Только ведущий может начать игру.', reply_markup=create_player_keyboard(is_host_assigned=True, is_player=message.from_user.id in players))
         return
 
-    if len(players) < 2:
+    if len(players) < 1:
         bot.reply_to(message, 'Недостаточно игроков для начала игры.', reply_markup=create_host_keyboard())
         return
 
@@ -138,9 +135,10 @@ def begin_game(message):
             bot.send_message(player_id, f'Ваша роль: {role}', reply_markup=create_player_keyboard(is_host_assigned=True, is_player=True))
 
     # Отправка всех ролей ведущему
-    roles_message = "\n".join([f'{players[player_id]}: {role}' for player_id, role in zip(players.keys(), roles)])
+    roles_message = "\n".join([f'@{players[player_id]}: {role}' for player_id, role in zip(players.keys(), roles)])
     bot.send_message(host_id, f'Роли игроков:\n{roles_message}', reply_markup=create_host_keyboard())
-
+    bot.send_message(host_id, 'Игра началась! Наступила ночь. Мафия, просыпайтесь!', reply_markup=create_host_keyboard())
+    
     game_state = "night"
     for player_id in players:
         bot.send_message(player_id, 'Игра началась! Наступила ночь. Мафия, просыпайтесь!', reply_markup=create_host_keyboard() if player_id == host_id else create_player_keyboard(is_host_assigned=True, is_player=True))
@@ -160,6 +158,7 @@ def night(message):
     game_state = "night"
     for player_id in players:
         bot.send_message(player_id, 'Наступила ночь. Мафия, просыпайтесь!', reply_markup=create_host_keyboard() if player_id == host_id else create_player_keyboard(is_host_assigned=True, is_player=True))
+    bot.send_message(host_id, 'Наступила ночь. Мафия, просыпайтесь!', reply_markup=create_host_keyboard())
 
 # Функция для управления днем
 @bot.message_handler(commands=['day'])
@@ -175,6 +174,7 @@ def day(message):
     game_state = "day"
     for player_id in players:
         bot.send_message(player_id, 'Наступил день. Все просыпаются! Начинается голосование.', reply_markup=create_host_keyboard() if player_id == host_id else create_player_keyboard(is_host_assigned=True, is_player=True))
+    bot.send_message(host_id, 'Наступил день. Все просыпаются! Начинается голосование.', reply_markup=create_host_keyboard())
 
 # Функция для начала новой игры
 @bot.message_handler(commands=['newgame'])
