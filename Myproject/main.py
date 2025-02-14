@@ -1,6 +1,3 @@
-# cd/d C:\Users\'имя пользователя'\AppData\Local\Programs\Python\'версия питона'\Scripts (стандартное расположение)
-# pip install pyTelegramBotAPI
-    
 
 import telebot
 import random
