@@ -3,7 +3,7 @@ import random
 from telebot import types
 
 # Токен бота
-TOKEN = ''
+TOKEN = 'BOT_TOKEN'
 
 # Создание экземпляра бота
 bot = telebot.TeleBot(TOKEN)
@@ -58,6 +58,8 @@ def join(message):
     if player_id not in players:
         players[player_id] = player_name
         bot.reply_to(message, f'{player_name} присоединился к игре!', reply_markup=create_player_keyboard(is_host_assigned=host_id is not None, is_player=True))
+        if host_id is not None:
+            bot.send_message(host_id, f'{player_name} присоединился к игре!')
     else:
         bot.reply_to(message, f'{player_name}, вы уже в игре!', reply_markup=create_player_keyboard(is_host_assigned=host_id is not None, is_player=True))
 
@@ -114,6 +116,11 @@ def reset_role(message):
     else:
         bot.reply_to(message, 'Вы не в игре.', reply_markup=create_player_keyboard(is_host_assigned=host_id is not None))
 
+role_images = {
+    'мафия': 'images/maf.jpg',  
+    'мирный': 'images/civ.jpg'
+}
+
 # Функция для начала игры
 @bot.message_handler(commands=['begin'])
 def begin_game(message):
@@ -123,7 +130,7 @@ def begin_game(message):
         return
 
     if len(players) < 3:
-        bot.reply_to(message, 'Недостаточно игроков для начала игры.', reply_markup=create_host_keyboard())
+        bot.reply_to(message, 'Недостаточно игроков для начала игры, нужно не менее 3 человек.', reply_markup=create_host_keyboard())
         return
 
     # Распределение ролей
@@ -137,8 +144,10 @@ def begin_game(message):
         roles[player_id] = role
         if player_id == host_id:
             bot.send_message(player_id, f'Ваша роль: {role}', reply_markup=create_host_keyboard())
+            bot.send_photo(player_id, open(role_images[role], 'rb'))
         else:
             bot.send_message(player_id, f'Ваша роль: {role}', reply_markup=create_player_keyboard(is_host_assigned=True, is_player=True))
+            bot.send_photo(player_id, open(role_images[role], 'rb'))
 
     # Отправка всех ролей ведущему
     roles_message = "\n".join([f'{players[player_id]}: {role}' for player_id, role in roles.items()])
@@ -180,6 +189,10 @@ def night(message):
     for mafia_id in mafia_ids:
         bot.send_message(mafia_id, f'Выберите жертву:\n{living_players_message}', reply_markup=create_player_keyboard(is_host_assigned=True, is_player=True))
 
+victory_images = {
+    'win': 'images/win.png',     
+}
+
 # Функция для управления днем
 @bot.message_handler(commands=['day'])
 def day(message):
@@ -207,12 +220,16 @@ def day(message):
             bot.send_message(host_id, 'Все мирные жители убиты. Мафия побеждает!')
             for player_id in players:
                 bot.send_message(player_id, 'Все мирные жители убиты. Мафия побеждает!')
+            bot.send_photo(host_id, open(victory_images['win'], 'rb'))
+            bot.send_photo(player_id, open(victory_images['win'], 'rb'))
             game_state = "waiting"
             return
         elif 'мафия' not in roles.values():
             bot.send_message(host_id, 'Все мафиози исключены. Мирные жители побеждают!')
             for player_id in players:
                 bot.send_message(player_id, 'Все мафиози исключены. Мирные жители побеждают!')
+            bot.send_photo(host_id, open(victory_images['win'], 'rb'))
+            bot.send_photo(player_id, open(victory_images['win'], 'rb'))
             game_state = "waiting"
             return
     else:
@@ -228,6 +245,7 @@ def day(message):
     # Отправка сообщения о начале голосования всем живым игрокам
     for player_id in players:
         bot.send_message(player_id, f'Голосование началось! Выберите игрока, за которого хотите проголосовать:\n{living_players_message}')
+    bot.send_message(host_id, f'Голосование началось!')
 
 # Обработчик для голосования
 @bot.message_handler(func=lambda message: game_state == "day" and message.from_user.id in players)
@@ -264,11 +282,15 @@ def vote(message):
                         bot.send_message(host_id, 'Все мирные жители убиты. Мафия побеждает!')
                         for player_id in players:
                             bot.send_message(player_id, 'Все мирные жители убиты. Мафия побеждает!')
+                        bot.send_photo(player_id, open(victory_images['win'], 'rb'))
+                        bot.send_photo(host_id, open(victory_images['win'], 'rb'))
                         game_state = "waiting"
                     elif 'мафия' not in roles.values():
                         bot.send_message(host_id, 'Все мафиози исключены. Мирные жители побеждают!')
                         for player_id in players:
                             bot.send_message(player_id, 'Все мафиози исключены. Мирные жители побеждают!')
+                        bot.send_photo(player_id, open(victory_images['win'], 'rb'))
+                        bot.send_photo(host_id, open(victory_images['win'], 'rb'))
                         game_state = "waiting"
                 else:
                     bot.send_message(host_id, 'Голосование завершено, но не удалось определить жертву.')
