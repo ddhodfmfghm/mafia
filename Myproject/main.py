@@ -122,13 +122,13 @@ def begin_game(message):
         bot.reply_to(message, 'Только ведущий может начать игру.', reply_markup=create_player_keyboard(is_host_assigned=True, is_player=message.from_user.id in players))
         return
 
-    if len(players) < 2:
+    if len(players) < 3:
         bot.reply_to(message, 'Недостаточно игроков для начала игры.', reply_markup=create_host_keyboard())
         return
 
     # Распределение ролей
     roles.clear()
-    num_mafia = len(players) // 2
+    num_mafia = len(players) // 3
     player_roles = ['мафия'] * num_mafia + ['мирный'] * (len(players) - num_mafia)
     random.shuffle(player_roles)
 
